@@ -7,7 +7,11 @@ from datetime import datetime, timedelta
 import subprocess
 import os
 
+import sys
+sys.stderr = open('/home/tim/home_automation/home_server/gps_log.txt', 'w')
+
 leap_seconds = 16 #change this when a leap second happens
+format_str = "%a %d %b %Y %I:%M:%S %p" #this is the format hwclock is outputting from the su terminal. it is different from the sudo command version.
 
 local_tz = get_localzone()
 
@@ -46,9 +50,9 @@ if ser.isOpen():
         #print date_strA
 
         #this reads the current system clock so we'll only update if we're more than a couple seconds off from the normal UTC time
-        hwtime_str = subprocess.check_output('hwclock', shell=False)
-        hwtime_str = hwtime_str[0:24]
-        hwtime_struct = time.strptime(hwtime_str)
+        hwtime_str = subprocess.check_output('sudo hwclock', shell=True)
+        hwtime_str = hwtime_str[0:27]
+        hwtime_struct = time.strptime(hwtime_str, format_str)
         hwtime = datetime(hwtime_struct.tm_year, hwtime_struct.tm_mon, hwtime_struct.tm_mday, hwtime_struct.tm_hour, hwtime_struct.tm_min, hwtime_struct.tm_sec)
 
         #this is the actual time setting command:
@@ -56,7 +60,9 @@ if ser.isOpen():
         copy_to_date_cmd = 'hwclock --hctosys'
         #the first if fixed hwclock if it's off by more than 5 seconds, reset hwclock
         utc_secs = time.mktime(lt.timetuple())
+        print utc_secs
         hwtime_secs = time.mktime(hwtime.timetuple())
+        print hwtime_secs
         if (abs( utc_secs - hwtime_secs ) > 5):
           os.system(set_cmd)
           os.system(copy_to_date_cmd)
